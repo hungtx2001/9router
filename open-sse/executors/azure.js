@@ -47,9 +47,28 @@ export class AzureExecutor extends DefaultExecutor {
   }
 
   transformRequest(model, body, stream, credentials) {
-    if (body && !body.model && model) {
-      return { ...body, model };
+    if (!body || typeof body !== "object") return body;
+    const out = !body.model && model ? { ...body, model } : { ...body };
+    const { endpointMode } = resolveAzureConfig(credentials, model);
+
+    if (endpointMode === "responses") {
+      if (out.reasoning_effort !== undefined) {
+        if (out.reasoning_effort !== "none" && out.reasoning === undefined) {
+          out.reasoning = { effort: out.reasoning_effort, summary: "auto" };
+        }
+        delete out.reasoning_effort;
+      }
+    } else if (
+      Array.isArray(out.tools) &&
+      out.tools.length > 0 &&
+      out.reasoning_effort &&
+      out.reasoning_effort !== "none" &&
+      /gpt-6-luna/i.test(out.model || model || "")
+    ) {
+      // Azure /chat/completions rejects function tools + reasoning_effort on gpt-6-luna
+      out.reasoning_effort = "none";
     }
-    return body;
+
+    return out;
   }
 }
