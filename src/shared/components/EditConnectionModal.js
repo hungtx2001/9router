@@ -281,13 +281,6 @@ export default function EditConnectionModal({ isOpen, connection, proxyPools, on
                 placeholder="2025-04-01-preview"
                 hint="Azure OpenAI API version to use"
               />
-              <Input
-                label="Organization (Optional)"
-                value={azureData.organization}
-                onChange={(e) => setAzureData({ ...azureData, organization: e.target.value })}
-                placeholder="Organization ID (optional)"
-                hint="Optional — only needed if your endpoint or proxy requires OpenAI-Organization"
-              />
             </div>
           </div>
         )}

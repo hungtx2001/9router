@@ -489,12 +489,6 @@ export default function AddApiKeyModal({ isOpen, provider, providerName, isCompa
                 onChange={(e) => setAzureData({ ...azureData, apiVersion: e.target.value })}
                 placeholder="2025-04-01-preview"
               />
-              <Input
-                label="Organization (Optional)"
-                value={azureData.organization}
-                onChange={(e) => setAzureData({ ...azureData, organization: e.target.value })}
-                placeholder="Organization ID (optional)"
-              />
             </div>
           </div>
         )}
