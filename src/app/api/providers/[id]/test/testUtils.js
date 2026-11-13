@@ -628,17 +628,13 @@ async function testApiKeyConnection(connection, effectiveProxy = null) {
       }
       case "azure": {
         const psd = connection.providerSpecificData || {};
-        const { url, deployment, endpointMode, authScheme } = resolveAzureConfig(connection);
+        const { url, deployment } = resolveAzureConfig(connection);
         const headers = {
           "Content-Type": "application/json",
-          ...(authScheme === "bearer"
-            ? { Authorization: `Bearer ${connection.apiKey}` }
-            : { "api-key": connection.apiKey }),
+          "api-key": connection.apiKey,
         };
         if (psd.organization) headers["OpenAI-Organization"] = psd.organization;
-        const probeBody = endpointMode === "responses"
-          ? { model: deployment, input: "test", max_output_tokens: 16 }
-          : { model: deployment, messages: [{ role: "user", content: "test" }], max_completion_tokens: 1 };
+        const probeBody = { model: deployment, messages: [{ role: "user", content: "test" }], max_completion_tokens: 1 };
         const res = await fetchWithConnectionProxy(url, {
           method: "POST", headers,
           body: JSON.stringify(probeBody),

@@ -2,47 +2,22 @@ export function resolveAzureConfig(credentials = null, model = null) {
   const psd = credentials?.providerSpecificData || {};
   const rawEndpoint = (psd.azureEndpoint || process.env.AZURE_ENDPOINT || "https://api.openai.com").trim();
   let apiVersion = (psd.apiVersion || process.env.AZURE_API_VERSION || "").trim();
+  const parsedUrl = URL.canParse(rawEndpoint) ? new URL(rawEndpoint) : null;
   const deployment = (psd.deployment || model || process.env.AZURE_DEPLOYMENT || "gpt-4").trim();
+  apiVersion ||= parsedUrl?.searchParams.get("api-version") || "2024-10-01-preview";
 
-  let parsedUrl = null;
-  try {
-    parsedUrl = new URL(rawEndpoint);
-  } catch {
-    parsedUrl = null;
-  }
-
-  let endpointMode = psd.endpointMode;
-  if (!endpointMode) {
-    endpointMode = parsedUrl?.pathname?.includes("/openai/responses") || !psd.deployment
-      ? "responses"
-      : "deployments";
-  }
-
-  if (!apiVersion) {
-    apiVersion = parsedUrl?.searchParams?.get("api-version")
-      || (endpointMode === "responses" ? "2025-04-01-preview" : "2024-10-01-preview");
-  }
-
-  const origin = parsedUrl ? parsedUrl.origin : rawEndpoint.replace(/\/$/, "");
-  const pathname = parsedUrl?.pathname?.replace(/\/$/, "") || "";
-
-  let url;
-  if (pathname && pathname !== "/" && (pathname.includes("/openai/responses") || pathname.includes("/openai/deployments/"))) {
-    const u = new URL(origin + pathname);
-    if (parsedUrl?.search) {
-      u.search = parsedUrl.search;
+  const origin = parsedUrl?.origin || rawEndpoint.replace(/\/$/, "");
+  const pathname = parsedUrl?.pathname.replace(/\/$/, "") || "";
+  const deploymentPath = /^\/openai\/deployments\/[^/]+\/chat\/completions$/.test(pathname)
+    ? pathname
+    : `/openai/deployments/${encodeURIComponent(deployment)}/chat/completions`;
+  const url = new URL(deploymentPath, `${origin}/`);
+  if (parsedUrl) {
+    for (const [key, value] of parsedUrl.searchParams) {
+      if (key !== "api-version") url.searchParams.append(key, value);
     }
-    if (!u.searchParams.has("api-version") && apiVersion) {
-      u.searchParams.set("api-version", apiVersion);
-    }
-    url = u.toString();
-  } else if (endpointMode === "responses") {
-    url = `${origin}/openai/responses?api-version=${apiVersion}`;
-  } else {
-    url = `${origin}/openai/deployments/${deployment}/chat/completions?api-version=${apiVersion}`;
   }
+  url.searchParams.set("api-version", apiVersion);
 
-  const authScheme = psd.authScheme || (endpointMode === "responses" ? "bearer" : "api-key");
-
-  return { url, apiVersion, deployment, endpointMode, authScheme };
+  return { url: url.toString(), apiVersion, deployment, endpointMode: "deployments", authScheme: "api-key" };
 }

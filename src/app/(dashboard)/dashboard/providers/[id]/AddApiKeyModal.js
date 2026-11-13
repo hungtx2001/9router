@@ -475,10 +475,10 @@ export default function AddApiKeyModal({ isOpen, provider, providerName, isCompa
                 label="Azure Endpoint"
                 value={azureData.azureEndpoint}
                 onChange={(e) => handleAzureEndpointChange(e.target.value)}
-                placeholder="https://your-resource.openai.azure.com or .../openai/responses?api-version=..."
+                placeholder="https://your-resource.openai.azure.com"
               />
               <Input
-                label="Deployment / Model (Optional)"
+                label="Deployment Name"
                 value={azureData.deployment}
                 onChange={(e) => setAzureData({ ...azureData, deployment: e.target.value })}
                 placeholder="gpt-6-luna"
@@ -487,7 +487,7 @@ export default function AddApiKeyModal({ isOpen, provider, providerName, isCompa
                 label="API Version"
                 value={azureData.apiVersion}
                 onChange={(e) => setAzureData({ ...azureData, apiVersion: e.target.value })}
-                placeholder="2025-04-01-preview"
+                placeholder="2024-10-01-preview"
               />
             </div>
           </div>

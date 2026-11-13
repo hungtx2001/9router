@@ -220,20 +220,16 @@ export async function POST(request) {
 
       if (provider === "azure") {
         const { providerSpecificData } = body;
-        const { url, deployment, endpointMode, authScheme } = resolveAzureConfig({ providerSpecificData });
+        const { url, deployment } = resolveAzureConfig({ providerSpecificData });
         const organization = providerSpecificData?.organization;
 
         const headers = {
           "Content-Type": "application/json",
-          ...(authScheme === "bearer"
-            ? { Authorization: `Bearer ${apiKey}` }
-            : { "api-key": apiKey }),
+          "api-key": apiKey,
         };
         if (organization) headers["OpenAI-Organization"] = organization;
 
-        const probeBody = endpointMode === "responses"
-          ? { model: deployment, input: "test", max_output_tokens: 16 }
-          : { model: deployment, messages: [{ role: "user", content: "test" }], max_completion_tokens: 1 };
+        const probeBody = { model: deployment, messages: [{ role: "user", content: "test" }], max_completion_tokens: 1 };
 
         const azureRes = await fetch(url, {
           method: "POST",

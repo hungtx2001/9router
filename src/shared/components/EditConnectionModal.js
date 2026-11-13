@@ -264,21 +264,21 @@ export default function EditConnectionModal({ isOpen, connection, proxyPools, on
                 label="Azure Endpoint"
                 value={azureData.azureEndpoint}
                 onChange={(e) => setAzureData({ ...azureData, azureEndpoint: e.target.value })}
-                placeholder="https://your-resource.openai.azure.com or .../openai/responses?api-version=..."
-                hint="Base URL or full /openai/responses URL"
+                placeholder="https://your-resource.openai.azure.com"
+                hint="Azure resource endpoint; requests use chat/completions"
               />
               <Input
-                label="Deployment / Model (Optional)"
+                label="Deployment Name"
                 value={azureData.deployment}
                 onChange={(e) => setAzureData({ ...azureData, deployment: e.target.value })}
                 placeholder="gpt-6-luna"
-                hint="Deployment name (classic) or test model"
+                hint="Azure deployment name"
               />
               <Input
                 label="API Version"
                 value={azureData.apiVersion}
                 onChange={(e) => setAzureData({ ...azureData, apiVersion: e.target.value })}
-                placeholder="2025-04-01-preview"
+                placeholder="2024-10-01-preview"
                 hint="Azure OpenAI API version to use"
               />
             </div>

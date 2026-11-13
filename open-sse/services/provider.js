@@ -139,12 +139,7 @@ export function getTargetFormat(provider, credentials = null) {
   if (isAnthropicCompatible(provider)) {
     return "claude";
   }
-  if (provider === "azure") {
-    const psd = credentials?.providerSpecificData;
-    const isResponses = psd?.endpointMode === "responses"
-      || (!psd?.endpointMode && psd?.azureEndpoint?.includes("/openai/responses"));
-    return isResponses ? "openai-responses" : "openai";
-  }
+  if (provider === "azure") return "openai";
   const config = getProviderConfig(provider, credentials);
   return config.format || "openai";
 }
