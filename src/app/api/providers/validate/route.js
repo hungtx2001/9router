@@ -218,26 +218,27 @@ export async function POST(request) {
       }
 
       if (provider === "azure") {
+        const { resolveAzureConfig } = await import("open-sse/executors/azure.js");
         const { providerSpecificData } = body;
-        const endpoint = (providerSpecificData?.azureEndpoint || "").replace(/\/$/, "");
-        const deployment = providerSpecificData?.deployment || "gpt-4";
-        const apiVersion = providerSpecificData?.apiVersion || "2024-10-01-preview";
+        const { url, deployment, endpointMode, authScheme } = resolveAzureConfig({ providerSpecificData });
         const organization = providerSpecificData?.organization;
 
-        const url = `${endpoint}/openai/deployments/${deployment}/chat/completions?api-version=${apiVersion}`;
         const headers = {
-          "api-key": apiKey,
           "Content-Type": "application/json",
+          ...(authScheme === "bearer"
+            ? { Authorization: `Bearer ${apiKey}` }
+            : { "api-key": apiKey }),
         };
         if (organization) headers["OpenAI-Organization"] = organization;
+
+        const probeBody = endpointMode === "responses"
+          ? { model: deployment, input: "test", max_output_tokens: 16 }
+          : { model: deployment, messages: [{ role: "user", content: "test" }], max_completion_tokens: 1 };
 
         const azureRes = await fetch(url, {
           method: "POST",
           headers,
-          body: JSON.stringify({
-            messages: [{ role: "user", content: "test" }],
-            max_tokens: 1,
-          }),
+          body: JSON.stringify(probeBody),
         });
         isValid = azureRes.status !== 401 && azureRes.status !== 403;
         return NextResponse.json({

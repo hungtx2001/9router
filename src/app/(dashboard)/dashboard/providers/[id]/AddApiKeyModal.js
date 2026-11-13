@@ -43,7 +43,27 @@ export default function AddApiKeyModal({ isOpen, provider, providerName, isCompa
     apiVersion: "2024-10-01-preview",
     deployment: "",
     organization: "",
+    endpointMode: "deployments",
+    authScheme: "api-key",
   });
+
+  const handleAzureEndpointChange = (value) => {
+    setAzureData((prev) => {
+      const next = { ...prev, azureEndpoint: value };
+      try {
+        const parsed = new URL(value.trim());
+        if (parsed.pathname.includes("/openai/responses")) {
+          next.endpointMode = "responses";
+          next.authScheme = "bearer";
+          const urlVersion = parsed.searchParams.get("api-version");
+          if (urlVersion) next.apiVersion = urlVersion;
+        }
+      } catch {
+        // Ignore partial URLs while typing
+      }
+      return next;
+    });
+  };
   const [cloudflareData, setCloudflareData] = useState({ accountId: "" });
   const [bedrockData, setBedrockData] = useState({
     profile: "",
@@ -95,10 +115,12 @@ export default function AddApiKeyModal({ isOpen, provider, providerName, isCompa
     }
     if (isAzure) {
       return {
-        azureEndpoint: azureData.azureEndpoint,
-        apiVersion: azureData.apiVersion,
-        deployment: azureData.deployment,
-        organization: azureData.organization,
+        azureEndpoint: azureData.azureEndpoint.trim(),
+        apiVersion: azureData.apiVersion.trim(),
+        deployment: azureData.deployment.trim(),
+        endpointMode: azureData.endpointMode,
+        authScheme: azureData.authScheme,
+        ...(azureData.organization.trim() ? { organization: azureData.organization.trim() } : {}),
       };
     }
     if (isCloudflareAi) {
@@ -460,26 +482,54 @@ export default function AddApiKeyModal({ isOpen, provider, providerName, isCompa
               <Input
                 label="Azure Endpoint"
                 value={azureData.azureEndpoint}
-                onChange={(e) => setAzureData({ ...azureData, azureEndpoint: e.target.value })}
-                placeholder="https://your-resource.openai.azure.com"
+                onChange={(e) => handleAzureEndpointChange(e.target.value)}
+                placeholder="https://your-resource.openai.azure.com or full .../openai/responses?api-version=..."
+              />
+              <Select
+                label="Endpoint Mode"
+                value={azureData.endpointMode}
+                onChange={(e) => {
+                  const mode = e.target.value;
+                  setAzureData((prev) => ({
+                    ...prev,
+                    endpointMode: mode,
+                    authScheme: mode === "responses" ? "bearer" : "api-key",
+                    apiVersion: mode === "responses" && prev.apiVersion === "2024-10-01-preview"
+                      ? "2025-04-01-preview"
+                      : prev.apiVersion,
+                  }));
+                }}
+                options={[
+                  { value: "deployments", label: "Deployments (/openai/deployments/{deployment}/chat/completions)" },
+                  { value: "responses", label: "Unified / Responses (/openai/responses)" },
+                ]}
+              />
+              <Select
+                label="Auth Header"
+                value={azureData.authScheme}
+                onChange={(e) => setAzureData({ ...azureData, authScheme: e.target.value })}
+                options={[
+                  { value: "api-key", label: "api-key (Classic Azure OpenAI)" },
+                  { value: "bearer", label: "Authorization: Bearer (New Azure / Foundry)" },
+                ]}
               />
               <Input
-                label="Deployment Name"
+                label={azureData.endpointMode === "responses" ? "Default / Test Model (Optional)" : "Deployment Name"}
                 value={azureData.deployment}
                 onChange={(e) => setAzureData({ ...azureData, deployment: e.target.value })}
-                placeholder="gpt-4"
+                placeholder={azureData.endpointMode === "responses" ? "gpt-6-luna" : "gpt-4"}
               />
               <Input
                 label="API Version"
                 value={azureData.apiVersion}
                 onChange={(e) => setAzureData({ ...azureData, apiVersion: e.target.value })}
-                placeholder="2024-10-01-preview"
+                placeholder={azureData.endpointMode === "responses" ? "2025-04-01-preview" : "2024-10-01-preview"}
               />
               <Input
-                label="Organization"
+                label="Organization (Optional)"
                 value={azureData.organization}
                 onChange={(e) => setAzureData({ ...azureData, organization: e.target.value })}
-                placeholder="Organization ID"
+                placeholder="Organization ID (optional)"
               />
             </div>
           </div>
@@ -514,7 +564,7 @@ export default function AddApiKeyModal({ isOpen, provider, providerName, isCompa
         </p>
 
         <div className="flex gap-2">
-          <Button onClick={handleSubmit} fullWidth disabled={saving || (!isOllamaLocal && (!formData.name || !apiKeySatisfied())) || (isCompatible && !formData.defaultModel.trim()) || (isAzure && (!azureData.azureEndpoint || !azureData.deployment || !azureData.organization)) || (isCloudflareAi && !cloudflareData.accountId)}>
+          <Button onClick={handleSubmit} fullWidth disabled={saving || (!isOllamaLocal && (!formData.name || !apiKeySatisfied())) || (isCompatible && !formData.defaultModel.trim()) || (isAzure && (!azureData.azureEndpoint.trim() || (azureData.endpointMode !== "responses" && !azureData.deployment.trim()))) || (isCloudflareAi && !cloudflareData.accountId)}>
             {saving ? "Saving..." : "Save"}
           </Button>
           <Button onClick={onClose} variant="ghost" fullWidth>
