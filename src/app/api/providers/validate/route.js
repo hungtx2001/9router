@@ -8,6 +8,7 @@ import { openaiToCommandCodeRequest } from "open-sse/translator/request/openai-t
 import { buildCommandCodeHeaders } from "open-sse/shared/commandCodeHeaders.js";
 import { resolveQoderCredentials, resolveQoderModels } from "open-sse/services/qoderModels.js";
 import { probeBedrockCredentials } from "open-sse/executors/bedrock.js";
+import { resolveAzureConfig } from "open-sse/executors/azureConfig.js";
 import {
   createNousApiKeyProbe,
   getNousApiKeyValidationError,
@@ -218,7 +219,6 @@ export async function POST(request) {
       }
 
       if (provider === "azure") {
-        const { resolveAzureConfig } = await import("open-sse/executors/azure.js");
         const { providerSpecificData } = body;
         const { url, deployment, endpointMode, authScheme } = resolveAzureConfig({ providerSpecificData });
         const organization = providerSpecificData?.organization;

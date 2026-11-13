@@ -4,6 +4,7 @@ import { testProxyUrl } from "@/lib/network/proxyTest";
 import { isOpenAICompatibleProvider, isAnthropicCompatibleProvider, AI_PROVIDERS } from "@/shared/constants/providers";
 import { getDefaultModel } from "open-sse/config/providerModels.js";
 import { probeBedrockCredentials } from "open-sse/executors/bedrock.js";
+import { resolveAzureConfig } from "open-sse/executors/azureConfig.js";
 import { resolveOllamaLocalHost, PROVIDERS } from "open-sse/config/providers.js";
 import { proxyAwareFetch } from "open-sse/utils/proxyFetch.js";
 import { CODEX_CLI_VERSION } from "open-sse/config/appConstants.js";
@@ -626,7 +627,6 @@ async function testApiKeyConnection(connection, effectiveProxy = null) {
         return { valid, error: valid ? null : "Invalid API token or Account ID" };
       }
       case "azure": {
-        const { resolveAzureConfig } = await import("open-sse/executors/azure.js");
         const psd = connection.providerSpecificData || {};
         const { url, deployment, endpointMode, authScheme } = resolveAzureConfig(connection);
         const headers = {
