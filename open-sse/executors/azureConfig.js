@@ -13,7 +13,9 @@ export function resolveAzureConfig(credentials = null, model = null) {
 
   let endpointMode = psd.endpointMode;
   if (!endpointMode) {
-    endpointMode = parsedUrl?.pathname?.includes("/openai/responses") ? "responses" : "deployments";
+    endpointMode = parsedUrl?.pathname?.includes("/openai/responses") || !psd.deployment
+      ? "responses"
+      : "deployments";
   }
 
   if (!apiVersion) {

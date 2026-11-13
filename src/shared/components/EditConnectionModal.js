@@ -20,8 +20,6 @@ export default function EditConnectionModal({ isOpen, connection, proxyPools, on
     apiVersion: "2024-10-01-preview",
     deployment: "",
     organization: "",
-    endpointMode: "deployments",
-    authScheme: "api-key",
   });
   const [cloudflareData, setCloudflareData] = useState({ accountId: "" });
   const [awsData, setAwsData] = useState({ profile: "", region: "", accessKeyId: "", sessionToken: "" });
@@ -43,15 +41,11 @@ export default function EditConnectionModal({ isOpen, connection, proxyPools, on
       // Load Azure-specific data if present
       if (connection.provider === "azure" && connection.providerSpecificData) {
         const psd = connection.providerSpecificData;
-        const inferredMode = psd.endpointMode
-          || (psd.azureEndpoint?.includes("/openai/responses") ? "responses" : "deployments");
         setAzureData({
           azureEndpoint: psd.azureEndpoint || "",
-          apiVersion: psd.apiVersion || (inferredMode === "responses" ? "2025-04-01-preview" : "2024-10-01-preview"),
+          apiVersion: psd.apiVersion || "2024-10-01-preview",
           deployment: psd.deployment || "",
           organization: psd.organization || "",
-          endpointMode: inferredMode,
-          authScheme: psd.authScheme || (inferredMode === "responses" ? "bearer" : "api-key"),
         });
       }
       if (connection.provider === "cloudflare-ai" && connection.providerSpecificData) {
@@ -192,8 +186,6 @@ export default function EditConnectionModal({ isOpen, connection, proxyPools, on
           azureEndpoint: azureData.azureEndpoint.trim(),
           apiVersion: azureData.apiVersion.trim(),
           deployment: azureData.deployment.trim(),
-          endpointMode: azureData.endpointMode,
-          authScheme: azureData.authScheme,
           organization: azureData.organization.trim(),
         };
       }
@@ -272,46 +264,21 @@ export default function EditConnectionModal({ isOpen, connection, proxyPools, on
                 label="Azure Endpoint"
                 value={azureData.azureEndpoint}
                 onChange={(e) => setAzureData({ ...azureData, azureEndpoint: e.target.value })}
-                placeholder="https://your-resource.openai.azure.com or full .../openai/responses?api-version=..."
-                hint="Your Azure OpenAI resource endpoint URL (base URL or full /openai/responses URL)"
-              />
-              <Select
-                label="Endpoint Mode"
-                value={azureData.endpointMode}
-                onChange={(e) => {
-                  const mode = e.target.value;
-                  setAzureData((prev) => ({
-                    ...prev,
-                    endpointMode: mode,
-                    authScheme: mode === "responses" ? "bearer" : "api-key",
-                  }));
-                }}
-                options={[
-                  { value: "deployments", label: "Deployments (/openai/deployments/{deployment}/chat/completions)" },
-                  { value: "responses", label: "Unified / Responses (/openai/responses)" },
-                ]}
-              />
-              <Select
-                label="Auth Header"
-                value={azureData.authScheme}
-                onChange={(e) => setAzureData({ ...azureData, authScheme: e.target.value })}
-                options={[
-                  { value: "api-key", label: "api-key (Classic Azure OpenAI)" },
-                  { value: "bearer", label: "Authorization: Bearer (New Azure / Foundry)" },
-                ]}
+                placeholder="https://your-resource.openai.azure.com or .../openai/responses?api-version=..."
+                hint="Base URL or full /openai/responses URL"
               />
               <Input
-                label={azureData.endpointMode === "responses" ? "Default / Test Model (Optional)" : "Deployment Name"}
+                label="Deployment / Model (Optional)"
                 value={azureData.deployment}
                 onChange={(e) => setAzureData({ ...azureData, deployment: e.target.value })}
-                placeholder={azureData.endpointMode === "responses" ? "gpt-6-luna" : "gpt-4"}
-                hint={azureData.endpointMode === "responses" ? "Used when testing connection; requests pass model in body" : "The deployment name in your Azure resource"}
+                placeholder="gpt-6-luna"
+                hint="Deployment name (classic) or test model"
               />
               <Input
                 label="API Version"
                 value={azureData.apiVersion}
                 onChange={(e) => setAzureData({ ...azureData, apiVersion: e.target.value })}
-                placeholder={azureData.endpointMode === "responses" ? "2025-04-01-preview" : "2024-10-01-preview"}
+                placeholder="2025-04-01-preview"
                 hint="Azure OpenAI API version to use"
               />
               <Input

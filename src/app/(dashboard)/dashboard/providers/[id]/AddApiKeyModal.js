@@ -43,8 +43,6 @@ export default function AddApiKeyModal({ isOpen, provider, providerName, isCompa
     apiVersion: "2024-10-01-preview",
     deployment: "",
     organization: "",
-    endpointMode: "deployments",
-    authScheme: "api-key",
   });
 
   const handleAzureEndpointChange = (value) => {
@@ -52,12 +50,8 @@ export default function AddApiKeyModal({ isOpen, provider, providerName, isCompa
       const next = { ...prev, azureEndpoint: value };
       try {
         const parsed = new URL(value.trim());
-        if (parsed.pathname.includes("/openai/responses")) {
-          next.endpointMode = "responses";
-          next.authScheme = "bearer";
-          const urlVersion = parsed.searchParams.get("api-version");
-          if (urlVersion) next.apiVersion = urlVersion;
-        }
+        const urlVersion = parsed.searchParams.get("api-version");
+        if (urlVersion) next.apiVersion = urlVersion;
       } catch {
         // Ignore partial URLs while typing
       }
@@ -118,8 +112,6 @@ export default function AddApiKeyModal({ isOpen, provider, providerName, isCompa
         azureEndpoint: azureData.azureEndpoint.trim(),
         apiVersion: azureData.apiVersion.trim(),
         deployment: azureData.deployment.trim(),
-        endpointMode: azureData.endpointMode,
-        authScheme: azureData.authScheme,
         ...(azureData.organization.trim() ? { organization: azureData.organization.trim() } : {}),
       };
     }
@@ -483,47 +475,19 @@ export default function AddApiKeyModal({ isOpen, provider, providerName, isCompa
                 label="Azure Endpoint"
                 value={azureData.azureEndpoint}
                 onChange={(e) => handleAzureEndpointChange(e.target.value)}
-                placeholder="https://your-resource.openai.azure.com or full .../openai/responses?api-version=..."
-              />
-              <Select
-                label="Endpoint Mode"
-                value={azureData.endpointMode}
-                onChange={(e) => {
-                  const mode = e.target.value;
-                  setAzureData((prev) => ({
-                    ...prev,
-                    endpointMode: mode,
-                    authScheme: mode === "responses" ? "bearer" : "api-key",
-                    apiVersion: mode === "responses" && prev.apiVersion === "2024-10-01-preview"
-                      ? "2025-04-01-preview"
-                      : prev.apiVersion,
-                  }));
-                }}
-                options={[
-                  { value: "deployments", label: "Deployments (/openai/deployments/{deployment}/chat/completions)" },
-                  { value: "responses", label: "Unified / Responses (/openai/responses)" },
-                ]}
-              />
-              <Select
-                label="Auth Header"
-                value={azureData.authScheme}
-                onChange={(e) => setAzureData({ ...azureData, authScheme: e.target.value })}
-                options={[
-                  { value: "api-key", label: "api-key (Classic Azure OpenAI)" },
-                  { value: "bearer", label: "Authorization: Bearer (New Azure / Foundry)" },
-                ]}
+                placeholder="https://your-resource.openai.azure.com or .../openai/responses?api-version=..."
               />
               <Input
-                label={azureData.endpointMode === "responses" ? "Default / Test Model (Optional)" : "Deployment Name"}
+                label="Deployment / Model (Optional)"
                 value={azureData.deployment}
                 onChange={(e) => setAzureData({ ...azureData, deployment: e.target.value })}
-                placeholder={azureData.endpointMode === "responses" ? "gpt-6-luna" : "gpt-4"}
+                placeholder="gpt-6-luna"
               />
               <Input
                 label="API Version"
                 value={azureData.apiVersion}
                 onChange={(e) => setAzureData({ ...azureData, apiVersion: e.target.value })}
-                placeholder={azureData.endpointMode === "responses" ? "2025-04-01-preview" : "2024-10-01-preview"}
+                placeholder="2025-04-01-preview"
               />
               <Input
                 label="Organization (Optional)"
@@ -564,7 +528,7 @@ export default function AddApiKeyModal({ isOpen, provider, providerName, isCompa
         </p>
 
         <div className="flex gap-2">
-          <Button onClick={handleSubmit} fullWidth disabled={saving || (!isOllamaLocal && (!formData.name || !apiKeySatisfied())) || (isCompatible && !formData.defaultModel.trim()) || (isAzure && (!azureData.azureEndpoint.trim() || (azureData.endpointMode !== "responses" && !azureData.deployment.trim()))) || (isCloudflareAi && !cloudflareData.accountId)}>
+          <Button onClick={handleSubmit} fullWidth disabled={saving || (!isOllamaLocal && (!formData.name || !apiKeySatisfied())) || (isCompatible && !formData.defaultModel.trim()) || (isAzure && !azureData.azureEndpoint.trim()) || (isCloudflareAi && !cloudflareData.accountId)}>
             {saving ? "Saving..." : "Save"}
           </Button>
           <Button onClick={onClose} variant="ghost" fullWidth>
